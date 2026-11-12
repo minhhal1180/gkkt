@@ -1,0 +1,38 @@
+{
+  "name": "Gửi Về — So sánh tiền gửi về Việt Nam",
+  "short_name": "Gửi Về",
+  "description": "So sánh số tiền VND ước tính người nhận tại Việt Nam khi gửi từ Nhật Bản, Hàn Quốc hoặc Đài Loan.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "lang": "vi",
+  "background_color": "#F5F7F9",
+  "theme_color": "#155EEF",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
