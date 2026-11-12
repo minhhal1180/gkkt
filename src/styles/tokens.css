@@ -1,0 +1,39 @@
+:root {
+  /* Colors (§5.1) */
+  --color-page: #F5F7F9;
+  --color-surface: #FFFFFF;
+  --color-text: #172B4D;
+  --color-text-secondary: #52616B;
+  --color-primary: #155EEF;
+  --color-primary-hover: #124ECC;
+  --color-border-decorative: #D8E0E7;
+  --color-border-control: #718096;
+  --color-success: #166534;
+  --color-success-bg: #F0FDF4;
+  --color-warning: #92400E;
+  --color-warning-bg: #FFFBEB;
+  --color-error: #B42318;
+  --color-error-bg: #FEF3F2;
+
+  /* Typography (§5.2) */
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Spacing scale (§5.3) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  /* Layout & Radii (§5.3) */
+  --max-width: 1120px;
+  --form-width-desktop: 320px;
+  --radius-control: 8px;
+  --radius-card: 12px;
+  --radius-pill: 9999px;
+
+  /* Motion (§5.4) */
+  --transition-fast: 140ms ease;
+}
