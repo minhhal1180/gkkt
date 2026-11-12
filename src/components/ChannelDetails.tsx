@@ -1,4 +1,5 @@
 import {
+  formatDateTimeVn,
   formatMarginPercent,
   formatRate,
   formatSourceAmount,
@@ -51,7 +52,7 @@ export function ChannelDetails({
           <dd>{`${formatRate(result.referenceRate, 6)} VND/${sourceCurrency}`}</dd>
         </div>
         <div className="calc-row">
-          <dt>Biên tỷ giá</dt>
+          <dt>{result.dataKind === 'live_provider' ? 'Chênh lệch mid-market' : 'Biên tỷ giá'}</dt>
           <dd>{formatMarginPercent(result.margin)}</dd>
         </div>
         <div className="calc-row">
@@ -70,11 +71,25 @@ export function ChannelDetails({
               : '—'}
           </dd>
         </div>
+        {result.dataKind === 'live_provider' && result.collectedAt && (
+          <div className="calc-row">
+            <dt>Thời điểm thu thập</dt>
+            <dd>{formatDateTimeVn(result.collectedAt)}</dd>
+          </div>
+        )}
       </dl>
-      <p className="calc-note">
-        Biên tỷ giá là mức giảm giả định so với tỷ giá tham chiếu.
-      </p>
-      <p className="calc-note">Phí nhận giả định bằng 0.</p>
+      {result.dataKind === 'live_provider' ? (
+        <p className="calc-note">
+          Báo giá công khai từ Wise Comparison API (phương thức chuyển khoản tiêu chuẩn).
+        </p>
+      ) : (
+        <>
+          <p className="calc-note">
+            Biên tỷ giá là mức giảm giả định so với tỷ giá tham chiếu.
+          </p>
+          <p className="calc-note">Phí nhận giả định bằng 0.</p>
+        </>
+      )}
     </details>
   );
 }

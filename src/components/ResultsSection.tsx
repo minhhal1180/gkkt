@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
+  formatDateTimeVn,
   formatDateVn,
   formatRate,
   formatSourceAmount,
@@ -12,10 +13,17 @@ import type {
 } from '../domain/types';
 import { ChannelDetails } from './ChannelDetails';
 
+export interface LiveSourceMeta {
+  sourceName: string;
+  fetchedAt: number;
+}
+
 interface ResultsSectionProps {
   isLoading: boolean;
   rateErrorKind: 'no_rate' | 'expired' | null;
   isCachedWarning: boolean;
+  liveFallbackNotice?: boolean;
+  liveSourceMeta?: LiveSourceMeta | null;
   isDraftDirty: boolean;
   results: ComparisonResult[] | null;
   snapshot: FxSnapshot | null;
@@ -63,6 +71,8 @@ export function ResultsSection({
   isLoading,
   rateErrorKind,
   isCachedWarning,
+  liveFallbackNotice = false,
+  liveSourceMeta = null,
   isDraftDirty,
   results,
   snapshot,
@@ -129,19 +139,28 @@ export function ResultsSection({
     );
   }
 
-  if (!results || !snapshot) {
+  if (!results || (!snapshot && !liveSourceMeta)) {
     return null;
   }
 
-  const formattedDate = formatDateVn(snapshot.sourceUpdatedAt);
+  const formattedDate = snapshot ? formatDateVn(snapshot.sourceUpdatedAt) : '';
   const hasAnyValid = results.some((item) => item.status === 'valid');
+  const isLiveMode = liveSourceMeta !== null;
 
   return (
     <section className="results-section" aria-labelledby="results-heading">
-      {isCachedWarning && (
+      {isCachedWarning && snapshot && (
         <div className="status-banner status-banner--warning" role="status">
           <p className="status-banner-text">
             {`Đang dùng tỷ giá ngày ${formattedDate}.`}
+          </p>
+        </div>
+      )}
+
+      {liveFallbackNotice && !isLiveMode && (
+        <div className="status-banner status-banner--warning" role="status">
+          <p className="status-banner-text">
+            Không lấy được báo giá nhà cung cấp trực tiếp; đang dùng tỷ giá tham chiếu và phí minh họa.
           </p>
         </div>
       )}
@@ -153,9 +172,15 @@ export function ResultsSection({
       ) : (
         <>
           <div className="results-meta">
-            <p className="illustrative-label">Ước tính · Phí minh họa</p>
+            <p className="illustrative-label">
+              {isLiveMode
+                ? 'Báo giá công khai · Wise Comparison API'
+                : 'Ước tính · Phí minh họa'}
+            </p>
             <p className="rate-date-line">
-              {`Tỷ giá ngày ${formattedDate} · `}
+              {isLiveMode
+                ? `Cập nhật ${formatDateTimeVn(liveSourceMeta.fetchedAt)} · `
+                : `Tỷ giá ngày ${formattedDate} · `}
               <button
                 type="button"
                 className="inline-source-link"

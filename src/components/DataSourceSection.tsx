@@ -54,11 +54,28 @@ export function DataSourceSection({
               <dd>Mỗi ngày một lần theo lịch từ nguồn.</dd>
             </div>
             <div className="data-source-item">
-              <dt>Tính chất phí và biên tỷ giá</dt>
+              <dt>Báo giá nhà cung cấp thực tế (JPY → VND)</dt>
               <dd>
-                Phí gửi và biên giảm tỷ giá của Kênh A, Kênh B, Kênh C là cấu hình
-                minh họa giả định để so sánh, không phải báo giá giao dịch của
-                nhà cung cấp chuyển tiền thật.
+                Tuyến Nhật Bản lấy báo giá công khai trực tiếp qua Cloudflare
+                Worker từ{' '}
+                <a
+                  href="https://wise.com/gb/compare/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Wise Public Comparison API v4
+                </a>{' '}
+                (Instarem, SBI Remit, Wise — phương thức chuyển khoản tiêu
+                chuẩn).
+              </dd>
+            </div>
+            <div className="data-source-item">
+              <dt>Tính chất phí và biên tỷ giá (KRW, TWD hoặc khi dự phòng)</dt>
+              <dd>
+                Tuyến Hàn Quốc (Hanpass, SentBe, GmoneyTrans) và Đài Loan
+                (VietMoney, Western Union) hiện chưa có API báo giá công khai
+                không cần khóa nên vẫn dùng cấu hình Kênh A, Kênh B, Kênh C
+                minh họa giả định kết hợp tỷ giá tham chiếu.
               </dd>
             </div>
             <div className="data-source-item">

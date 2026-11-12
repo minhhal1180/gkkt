@@ -443,4 +443,89 @@ describe('App integration & behavior tests (U01–U10)', () => {
     });
     expect(within(table).getAllByText('16.286.160 ₫').length).toBeGreaterThanOrEqual(1);
   });
+
+  it('renders live verified JPY providers from Cloudflare Worker /api/quotes and falls back cleanly on error', async () => {
+    const fetchMock = vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url.startsWith('/api/quotes')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            mode: 'live_providers',
+            sourceCurrency: 'JPY',
+            sendAmount: 100000,
+            sourceName: 'Wise Public Comparison API v4',
+            sourceUrl: 'https://wise.com/gb/compare/',
+            fetchedAt: BASE_NOW,
+            quotes: [
+              {
+                providerId: 'instarem',
+                providerName: 'Instarem',
+                providerType: 'moneyTransferProvider',
+                fee: 0,
+                rate: 159.75,
+                markupPercent: 0.51,
+                receivedAmountVnd: 15975000,
+                collectedAt: BASE_NOW - 60_000,
+              },
+              {
+                providerId: 'sbi-remit',
+                providerName: 'SBI Remit',
+                providerType: 'moneyTransferProvider',
+                fee: 760,
+                rate: 159.875,
+                markupPercent: 0.44,
+                receivedAmountVnd: 15866000,
+                collectedAt: BASE_NOW - 30_000,
+              },
+              {
+                providerId: 'wise',
+                providerName: 'Wise',
+                providerType: 'moneyTransferProvider',
+                fee: 1244,
+                rate: 160.557,
+                markupPercent: 0,
+                receivedAmountVnd: 15855967,
+                collectedAt: BASE_NOW,
+              },
+            ],
+          }),
+        } as unknown as Response;
+      }
+      return makeOkFetchResponse();
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const user = userEvent.setup();
+
+    render(<App enableLiveProviderQuotes />);
+    await user.click(screen.getByRole('button', { name: 'So sánh' }));
+
+    expect(await screen.findByText('Instarem')).toBeInTheDocument();
+    expect(screen.getByText('SBI Remit')).toBeInTheDocument();
+    expect(screen.getByText('Wise')).toBeInTheDocument();
+    expect(
+      screen.getByText('Báo giá công khai · Wise Comparison API')
+    ).toBeInTheDocument();
+    expect(screen.getAllByText('15.975.000 ₫').length).toBeGreaterThanOrEqual(1);
+
+    // Now simulate Worker /api/quotes returning 502 -> falls back to illustrative channels with warning
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url.startsWith('/api/quotes')) {
+        return { ok: false, status: 502, json: async () => ({}) } as unknown as Response;
+      }
+      return makeOkFetchResponse();
+    });
+
+    const input = screen.getByLabelText('Bạn chi');
+    await user.clear(input);
+    await user.type(input, '100000');
+    await user.click(screen.getByRole('button', { name: 'So sánh' }));
+
+    expect(
+      await screen.findByText(/Không lấy được báo giá nhà cung cấp trực tiếp/)
+    ).toBeInTheDocument();
+    expect(screen.getByText('Kênh B')).toBeInTheDocument();
+  });
 });

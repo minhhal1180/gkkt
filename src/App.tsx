@@ -20,12 +20,20 @@ import type {
 import {
   AUTO_COOLDOWN_MS,
   ensureSnapshotForCompare,
+  fetchProviderQuotes,
   getCachedSnapshot,
   loadInitialSnapshot,
   refreshSnapshot,
 } from './services';
+import type { LiveSourceMeta } from './components/ResultsSection';
 
-export function App() {
+export interface AppProps {
+  enableLiveProviderQuotes?: boolean;
+}
+
+export function App({
+  enableLiveProviderQuotes = import.meta.env.MODE !== 'test',
+}: AppProps) {
   const [sourceCurrency, setSourceCurrency] = useState<SourceCurrency>('JPY');
   const [budgetText, setBudgetText] = useState<string>(() =>
     formatIntegerVi(COUNTRIES.JPY.defaultBudget)
@@ -39,6 +47,10 @@ export function App() {
   const [submitted, setSubmitted] = useState<CompareInput | null>(null);
   const [results, setResults] = useState<ComparisonResult[] | null>(null);
   const [isCachedWarning, setIsCachedWarning] = useState<boolean>(false);
+  const [liveFallbackNotice, setLiveFallbackNotice] = useState<boolean>(false);
+  const [liveSourceMeta, setLiveSourceMeta] = useState<LiveSourceMeta | null>(
+    null
+  );
   const [rateErrorKind, setRateErrorKind] = useState<
     'no_rate' | 'expired' | null
   >(null);
@@ -53,6 +65,8 @@ export function App() {
 
   const submittedRef = useRef<CompareInput | null>(submitted);
   submittedRef.current = submitted;
+  const liveSourceMetaRef = useRef<LiveSourceMeta | null>(liveSourceMeta);
+  liveSourceMetaRef.current = liveSourceMeta;
 
   useEffect(() => {
     let active = true;
@@ -64,7 +78,11 @@ export function App() {
           return;
         }
         setActiveSnapshot(res.snapshot);
-        if (submittedRef.current && res.status === 'fresh') {
+        if (
+          submittedRef.current &&
+          res.status === 'fresh' &&
+          !liveSourceMetaRef.current
+        ) {
           setResults(compare(submittedRef.current, res.snapshot));
           setIsCachedWarning(false);
           setRateErrorKind(null);
@@ -111,6 +129,8 @@ export function App() {
       setSubmitted(null);
       setResults(null);
       setIsCachedWarning(false);
+      setLiveFallbackNotice(false);
+      setLiveSourceMeta(null);
       setRateErrorKind(null);
       setIsDraftDirty(false);
       setDetailsResetCounter((prev) => prev + 1);
@@ -202,6 +222,45 @@ export function App() {
       setLiveAnnouncement('');
 
       try {
+        if (enableLiveProviderQuotes && sourceCurrency === 'JPY') {
+          const liveResult = await fetchProviderQuotes(
+            sourceCurrency,
+            parsed.value
+          );
+
+          if (submitTokenRef.current !== token) {
+            return;
+          }
+
+          if (liveResult.kind === 'live_provider') {
+            setIsSubmitting(false);
+            setSubmitted(compareInput);
+            setResults(liveResult.results);
+            setLiveSourceMeta({
+              sourceName: liveResult.sourceName,
+              fetchedAt: liveResult.fetchedAt,
+            });
+            setLiveFallbackNotice(false);
+            setIsCachedWarning(false);
+            setRateErrorKind(null);
+            setIsDraftDirty(false);
+
+            const top = liveResult.results[0];
+            if (top) {
+              setLiveAnnouncement(
+                top.isTiedTop
+                  ? `Đã cập nhật báo giá trực tiếp. Có phương án đồng hạng với ${formatVnd(top.estimatedReceiveVnd ?? 0)}.`
+                  : `Đã cập nhật báo giá trực tiếp. ${top.channelName} nhận ước tính ${formatVnd(top.estimatedReceiveVnd ?? 0)}.`
+              );
+            }
+            return;
+          }
+
+          setLiveFallbackNotice(liveResult.hadLiveError);
+        } else {
+          setLiveFallbackNotice(false);
+        }
+
         const fxResult = useExplicitRefresh
           ? await refreshSnapshot()
           : await ensureSnapshotForCompare();
@@ -220,6 +279,7 @@ export function App() {
           setRateErrorKind('expired');
           setSubmitted(null);
           setResults(null);
+          setLiveSourceMeta(null);
           setIsCachedWarning(false);
           setIsDraftDirty(false);
           setLiveAnnouncement('');
@@ -230,6 +290,7 @@ export function App() {
           setRateErrorKind('no_rate');
           setSubmitted(null);
           setResults(null);
+          setLiveSourceMeta(null);
           setIsCachedWarning(false);
           setIsDraftDirty(false);
           setLiveAnnouncement('');
@@ -239,6 +300,7 @@ export function App() {
         const nextResults = compare(compareInput, fxResult.snapshot);
         setSubmitted(compareInput);
         setResults(nextResults);
+        setLiveSourceMeta(null);
         setRateErrorKind(null);
         setIsDraftDirty(false);
         setIsCachedWarning(fxResult.status === 'cachedFallback');
@@ -268,12 +330,14 @@ export function App() {
         setRateErrorKind('no_rate');
         setSubmitted(null);
         setResults(null);
+        setLiveSourceMeta(null);
+        setLiveFallbackNotice(false);
         setIsCachedWarning(false);
         setIsDraftDirty(false);
         setLiveAnnouncement('');
       }
     },
-    [budgetText, isSubmitting, sourceCurrency]
+    [budgetText, enableLiveProviderQuotes, isSubmitting, sourceCurrency]
   );
 
   const handleFocusBudget = useCallback(() => {
@@ -322,6 +386,8 @@ export function App() {
               isLoading={isSubmitting}
               rateErrorKind={rateErrorKind}
               isCachedWarning={isCachedWarning}
+              liveFallbackNotice={liveFallbackNotice}
+              liveSourceMeta={liveSourceMeta}
               isDraftDirty={isDraftDirty}
               results={results}
               snapshot={activeSnapshot}

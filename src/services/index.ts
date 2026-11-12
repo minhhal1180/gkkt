@@ -23,3 +23,11 @@ export {
   FX_SNAPSHOT_STORAGE_KEY,
   type FxCooldownMeta,
 } from './fxStorage';
+export {
+  fetchProviderQuotes,
+  mapLiveQuotesToComparisonResults,
+  type FallbackQuotesResult,
+  type LiveProviderQuoteDto,
+  type LiveQuotesFetchResult,
+  type ProviderQuotesFetchResult,
+} from './providerQuotesService';

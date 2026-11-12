@@ -32,9 +32,9 @@ self.addEventListener('fetch', (event) => {
   }
 
   const url = new URL(request.url);
-  // Keep cross-origin FX API requests untouched so fxService handles
-  // network errors, 48-hour expiry, and stale warnings accurately.
-  if (url.origin !== self.location.origin) {
+  // Keep cross-origin FX API requests and Worker /api/* quote requests untouched
+  // so fxService and live provider quotes always reflect real network/offline state.
+  if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) {
     return;
   }
 

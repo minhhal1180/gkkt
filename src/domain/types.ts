@@ -34,10 +34,12 @@ export interface CompareInput {
   budget: string;
 }
 
+export type QuoteDataKind = 'illustrative' | 'live_provider';
+
 export interface ComparisonResult {
-  channelId: ChannelId;
+  channelId: string;
   channelName: string;
-  dataKind: 'illustrative';
+  dataKind: QuoteDataKind;
   status: QuoteStatus;
   budget: number;
   fixedFee: number;
@@ -50,6 +52,7 @@ export interface ComparisonResult {
   diffFromBestVnd: number | null;
   isTopRank: boolean;
   isTiedTop: boolean;
+  collectedAt?: number | null;
 }
 
 export type BudgetParseResult =
