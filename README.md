@@ -207,7 +207,7 @@ Kiểm thử tự động qua CDP trên **Microsoft Edge** (`Edg/157.0.0.0`) n�
 - Thử nghiệm người dùng nhanh (2–3 người thử với 3 tác vụ mục tiêu tại §14.3).
 - Triển khai thực tế lên **Cloudflare Pages** (chưa có URL `*.pages.dev` và commit hash phát hành; cập nhật hai thông tin này sau khi thực hiện bước 6 ở mục 4.2).
 
-### 9.4. Thông tin phát hành (điền khi deploy)
+### 9.4. Thông tin phát hành
 
-- **URL production:** *(chưa triển khai)*
-- **Commit đã kiểm tra:** *(chưa triển khai)*
+- **URL production:** `https://gui-ve.buixuanminh1801.workers.dev` (Cloudflare Workers Static Assets, Version ID `1a93686d-c867-4b8d-aebc-f692255a0c26`)
+- **Commit đã kiểm tra trên production:** `a6d0014` (đã kiểm tra trực tiếp trên Microsoft Edge: HTTPS, API `open.er-api.com` HTTP `200`, 3 tuyến `JPY`/`KRW`/`TWD`, `Chi tiết`/`Nguồn dữ liệu`, PWA Service Worker `activated`, tải & so sánh offline, và reflow `320 px`)
