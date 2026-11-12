@@ -54,28 +54,22 @@ export function DataSourceSection({
               <dd>Mỗi ngày một lần theo lịch từ nguồn.</dd>
             </div>
             <div className="data-source-item">
-              <dt>Báo giá nhà cung cấp thực tế (JPY → VND)</dt>
+              <dt>Dữ liệu công khai theo từng tuyến</dt>
               <dd>
-                Tuyến Nhật Bản lấy báo giá công khai trực tiếp qua Cloudflare
-                Worker từ{' '}
-                <a
-                  href="https://wise.com/gb/compare/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Wise Public Comparison API v4
-                </a>{' '}
-                (Instarem, SBI Remit, Wise — phương thức chuyển khoản tiêu
-                chuẩn).
+                <strong>Nhật Bản (JPY):</strong> Wise Public Comparison API v4
+                (Instarem, SBI Remit, Wise). <strong>Hàn Quốc (KRW):</strong>{' '}
+                Vietcombank (Mua chuyển khoản), MoneyBox Seoul (quầy đổi tiền)
+                và ExchangeRate-API. <strong>Đài Loan / Đài Bắc (TWD):</strong>{' '}
+                Ngân hàng Đài Loan (Bank of Taiwan · Đài Bắc) và
+                ExchangeRate-API.
               </dd>
             </div>
             <div className="data-source-item">
-              <dt>Tính chất phí và biên tỷ giá (KRW, TWD hoặc khi dự phòng)</dt>
+              <dt>Chế độ dự phòng phí minh họa</dt>
               <dd>
-                Tuyến Hàn Quốc (Hanpass, SentBe, GmoneyTrans) và Đài Loan
-                (VietMoney, Western Union) hiện chưa có API báo giá công khai
-                không cần khóa nên vẫn dùng cấu hình Kênh A, Kênh B, Kênh C
-                minh họa giả định kết hợp tỷ giá tham chiếu.
+                Khi ngoại tuyến hoặc nguồn trực tiếp tạm gián đoạn, hệ thống tự
+                động dùng Kênh A, Kênh B, Kênh C (phí minh họa) kết hợp bản lưu
+                tỷ giá gần nhất (tối đa 48 giờ).
               </dd>
             </div>
             <div className="data-source-item">

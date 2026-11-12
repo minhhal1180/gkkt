@@ -505,7 +505,7 @@ describe('App integration & behavior tests (U01–U10)', () => {
     expect(screen.getByText('SBI Remit')).toBeInTheDocument();
     expect(screen.getByText('Wise')).toBeInTheDocument();
     expect(
-      screen.getByText('Báo giá công khai · Wise Comparison API')
+      screen.getByText('Báo giá công khai · Wise Public Comparison API v4')
     ).toBeInTheDocument();
     expect(screen.getAllByText('15.975.000 ₫').length).toBeGreaterThanOrEqual(1);
 

@@ -80,7 +80,8 @@ export function ChannelDetails({
       </dl>
       {result.dataKind === 'live_provider' ? (
         <p className="calc-note">
-          Báo giá công khai từ Wise Comparison API (phương thức chuyển khoản tiêu chuẩn).
+          {result.providerNote ||
+            'Báo giá công khai từ nguồn tổ chức tài chính/nhà cung cấp.'}
         </p>
       ) : (
         <>

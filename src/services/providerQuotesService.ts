@@ -9,6 +9,7 @@ export interface LiveProviderQuoteDto {
   markupPercent: number;
   receivedAmountVnd: number;
   collectedAt: number | null;
+  note?: string | null;
 }
 
 export interface LiveQuotesFetchResult {
@@ -94,24 +95,21 @@ export function mapLiveQuotesToComparisonResults(
       isTopRank: canHighlightTop && isBest && topCount === 1,
       isTiedTop: canHighlightTop && isBest && topCount > 1,
       collectedAt: q.collectedAt,
+      providerNote: typeof q.note === 'string' ? q.note : null,
     };
   });
 }
 
 /**
- * Fetches live provider comparison quotes from the Cloudflare Worker `/api/quotes`.
- * Currently JPY -> VND has live open comparison quotes (Wise Comparison API v4);
- * KRW and TWD gracefully signal illustrative-only fallback.
+ * Fetches live provider/institution quotes from the Cloudflare Worker `/api/quotes`
+ * for JPY (Wise Comparison API), KRW (Vietcombank, MoneyBox, Open ER-API),
+ * and TWD (Bank of Taiwan Taipei & Open ER-API).
  */
 export async function fetchProviderQuotes(
   sourceCurrency: SourceCurrency,
   sendAmount: number,
   fetchImpl: typeof fetch = fetch
 ): Promise<ProviderQuotesFetchResult> {
-  if (sourceCurrency !== 'JPY') {
-    return { kind: 'fallback_illustrative', hadLiveError: false };
-  }
-
   const controller = new AbortController();
   const timerId = globalThis.setTimeout(
     () => controller.abort(),

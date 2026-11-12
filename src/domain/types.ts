@@ -53,6 +53,7 @@ export interface ComparisonResult {
   isTopRank: boolean;
   isTiedTop: boolean;
   collectedAt?: number | null;
+  providerNote?: string | null;
 }
 
 export type BudgetParseResult =

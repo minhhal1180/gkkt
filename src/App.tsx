@@ -222,7 +222,7 @@ export function App({
       setLiveAnnouncement('');
 
       try {
-        if (enableLiveProviderQuotes && sourceCurrency === 'JPY') {
+        if (enableLiveProviderQuotes) {
           const liveResult = await fetchProviderQuotes(
             sourceCurrency,
             parsed.value

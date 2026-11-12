@@ -174,7 +174,7 @@ export function ResultsSection({
           <div className="results-meta">
             <p className="illustrative-label">
               {isLiveMode
-                ? 'Báo giá công khai · Wise Comparison API'
+                ? `Báo giá công khai · ${liveSourceMeta.sourceName}`
                 : 'Ước tính · Phí minh họa'}
             </p>
             <p className="rate-date-line">
