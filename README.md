@@ -2,7 +2,7 @@
 
 Ứng dụng web tiếng Việt giúp người lao động tại **Nhật Bản (JPY)**, **Hàn Quốc (KRW)** và **Đài Loan (TWD)** ước tính và so sánh số tiền **VND** người nhận tại Việt Nam có thể nhận được khi chi cùng một ngân sách gửi (đã bao gồm phí).
 
-> **Lưu ý tính chất dữ liệu:** Tỷ giá tham chiếu lấy trực tiếp từ API mở (`open.er-api.com`, gốc USD). Biểu phí và biên tỷ giá của ba kênh (Kênh A, Kênh B, Kênh C) là **cấu hình minh họa giả định** để so sánh mô hình — **không phải** báo giá giao dịch thực tế hay tên nhà cung cấp thật.
+> **Lưu ý tính chất dữ liệu:** Ở chế độ trực tuyến, ứng dụng gọi API thực tế từ các nhà cung cấp và tổ chức công khai thông qua Cloudflare Worker (`/api/quotes`): **JPY → VND** dùng Wise Public Comparison API v4 (Instarem, SBI Remit, Wise); **KRW → VND** dùng tỷ giá thực tế của Vietcombank (Mua chuyển khoản), MoneyBox (Quầy Seoul) và tỷ giá tham chiếu liên ngân hàng (`open.er-api.com`); **TWD → VND** dùng tỷ giá thực tế của Ngân hàng Đài Loan (Đài Bắc) và tỷ giá tham chiếu liên ngân hàng (`open.er-api.com`). Ba kênh minh họa (`Kênh A`, `Kênh B`, `Kênh C`) chỉ đóng vai trò dự phòng khi ngoại tuyến hoặc khi API nhà cung cấp gặp lỗi.
 
 ---
 
@@ -35,16 +35,20 @@ npm run verify
 
 ## 2. Cấu trúc thư mục chính
 
-- `index.html`: Tài liệu gốc `lang="vi"`, không tải font hay analytics bên ngoài.
-- `src/domain/`: Hợp đồng kiểu dữ liệu, cấu hình tuyến tiền/kênh, bộ phân tích & kiểm tra ngân sách, phép tính thuần `compare()` bằng `decimal.js`, hàm định dạng `vi-VN`.
-- `src/services/`: Gọi `GET https://open.er-api.com/v6/latest/USD` (timeout 8 giây), kiểm tra tính hợp lệ, lưu đệm `localStorage` có fallback bộ nhớ phiên, kiểm soát độ mới 48 giờ và cooldown 60 phút.
+- `index.html`: Tài liệu gốc `lang="vi"`, khai báo PWA manifest & icon, không tải font hay analytics bên ngoài.
+- `public/`: `manifest.webmanifest`, Service Worker (`sw.js`) và bộ icon PWA (`icons/`).
+- `worker/`: Cloudflare Worker (`/api/quotes`) tổng hợp báo giá và tỷ giá thực tế theo thời gian thực cho 3 tuyến `JPY`, `KRW`, `TWD` từ các nguồn công khai có kiểm chứng.
+- `wrangler.jsonc`: Cấu hình triển khai Cloudflare Workers + Static Assets.
+- `src/domain/`: Hợp đồng kiểu dữ liệu, cấu hình tuyến tiền/kênh dự phòng, bộ phân tích & kiểm tra ngân sách, phép tính thuần `compare()` bằng `decimal.js`, hàm định dạng `vi-VN`.
+- `src/services/`: Gọi `/api/quotes` lấy báo giá thực tế (`providerQuotesService.ts`) và gọi `GET https://open.er-api.com/v6/latest/USD` (`fxService.ts`, timeout 8 giây), kiểm tra tính hợp lệ, lưu đệm `localStorage` có fallback bộ nhớ phiên, kiểm soát độ mới 48 giờ và cooldown 60 phút.
+- `src/pwa/`: Đăng ký Service Worker và lắng nghe trạng thái sẵn sàng ngoại tuyến.
 - `src/components/`, `src/styles/`, `src/App.tsx`, `src/main.tsx`: Giao diện responsive, accessibility và luồng tương tác.
 
 ---
 
-## 3. Hướng dẫn cập nhật cấu hình phí & biên tỷ giá
+## 3. Hướng dẫn cập nhật cấu hình phí & biên tỷ giá dự phòng
 
-Cấu hình ba kênh minh họa (`CHANNELS`) và cấu hình tuyến tiền (`COUNTRIES`) nằm trong [`src/domain/config.ts`](src/domain/config.ts).
+Cấu hình ba kênh minh họa dùng cho chế độ ngoại tuyến/dự phòng (`CHANNELS`) và cấu hình tuyến tiền (`COUNTRIES`) nằm trong [`src/domain/config.ts`](src/domain/config.ts). Nguồn API thực tế cho từng tuyến được cấu hình trong [`worker/index.ts`](worker/index.ts).
 
 | Kênh | Phí JPY | Phí KRW | Phí TWD | Biên giảm tỷ giá |
 | --- | ---: | ---: | ---: | ---: |
@@ -158,9 +162,13 @@ Cấu hình tuyến tiền mặc định và mức gợi ý:
 
 ## 7. Nguồn dữ liệu và tham khảo
 
-- **API tỷ giá tham chiếu:** [ExchangeRate-API Open Access](https://www.exchangerate-api.com/docs/free) (`GET https://open.er-api.com/v6/latest/USD`, cập nhật hằng ngày, ghi nguồn theo [Điều khoản](https://www.exchangerate-api.com/terms)).
+- **API báo giá & nhà đổi tiền thực tế (`worker/index.ts` → `/api/quotes`):**
+  - **Tuyến `JPY → VND`:** Wise Public Comparison API v4 (`https://api.wise.com/v4/comparisons`) — trả về phí, tỷ giá áp dụng, biên độ và số tiền VND thực nhận theo thời gian thực của **Instarem**, **SBI Remit**, **Wise**.
+  - **Tuyến `KRW → VND`:** Tỷ giá chuyển khoản **Vietcombank** (`https://portal.vietcombank.com.vn/UserControls/TVPortal.TyGia/pXML.aspx`), quầy đổi tiền **MoneyBox Seoul** (`https://cdn.jsdelivr.net/gh/haotool/app@data/public/rates/v3/current.json`), và tỷ giá tham chiếu liên ngân hàng (`open.er-api.com`).
+  - **Tuyến `TWD → VND`:** Tỷ giá **Ngân hàng Đài Loan (Bank of Taiwan · Đài Bắc)** (`https://rate.bot.com.tw/xrt/flcsv/0/day`) và tỷ giá tham chiếu liên ngân hàng (`open.er-api.com`).
+- **API tỷ giá tham chiếu & chế độ dự phòng:** [ExchangeRate-API Open Access](https://www.exchangerate-api.com/docs/free) (`GET https://open.er-api.com/v6/latest/USD`, cập nhật hằng ngày, ghi nguồn theo [Điều khoản](https://www.exchangerate-api.com/terms)).
 - **Quy chuẩn Accessibility:** W3C WCAG 2.2 AA ([Contrast](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html), [Reflow](https://www.w3.org/WAI/WCAG22/Understanding/reflow.html), [Status Messages](https://www.w3.org/WAI/WCAG22/Understanding/status-messages.html), [Target Size](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)).
-- **Quy chuẩn hosting:** [Cloudflare Pages Build Configuration](https://developers.cloudflare.com/pages/configuration/build-configuration/), [Rollbacks](https://developers.cloudflare.com/pages/configuration/rollbacks/).
+- **Quy chuẩn hosting:** [Cloudflare Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/), [Cloudflare Pages Build Configuration](https://developers.cloudflare.com/pages/configuration/build-configuration/), [Rollbacks](https://developers.cloudflare.com/pages/configuration/rollbacks/).
 
 ---
 
@@ -176,16 +184,18 @@ Cấu hình tuyến tiền mặc định và mức gợi ý:
 
 ## 9. Trạng thái kiểm thử & bàn giao
 
-### 9.1. Đã chạy và đạt trong môi trường phát triển (Node `v24.11.1`, `jsdom`)
+### 9.1. Đã chạy và đạt trong môi trường phát triển (`jsdom` / Vitest)
 
 Lệnh cổng kiểm tra `npm run verify` đạt (exit code `0`):
 
 - **`npm run typecheck`** (`tsc --noEmit`): đạt, không lỗi kiểu.
-- **`npm run test:run`** (`vitest run`): **3 tệp kiểm thử đạt, 56/56 test đạt**, không có test bị bỏ qua:
-  - [`src/domain/domain.test.ts`](src/domain/domain.test.ts) (17 tests): kiểm tra toàn bộ quy tắc tính toán **L01–L07** (bao gồm fixture Nhật `B=100.000`, `R=165` → `B=16.286.160`, `A=16.187.490`, `C=16.087.500`; chênh lệch `98.670` và `198.660`; cross-rate; làm tròn `ROUND_HALF_UP` một lần cuối; đồng hạng; không đủ trả phí), phân tích ngân sách **U04–U05**, và định dạng `vi-VN` / múi giờ `Asia/Ho_Chi_Minh`.
+- **`npm run test:run`** (`vitest run`): **5 tệp kiểm thử đạt, 65/65 test đạt**, không có test bị bỏ qua:
+  - [`src/domain/domain.test.ts`](src/domain/domain.test.ts) (17 tests): kiểm tra toàn bộ quy tắc tính toán **L01–L07**, phân tích ngân sách **U04–U05**, và định dạng `vi-VN` / múi giờ `Asia/Ho_Chi_Minh`.
   - [`src/services/fxService.test.ts`](src/services/fxService.test.ts) (27 tests): kiểm tra xác thực dữ liệu **L08**, chống trùng request **U06**, xử lý timeout/offline/HTTP 429 **U07**, fallback bộ nhớ phiên khi `localStorage` lỗi **U08**, và ranh giới đúng 48 giờ / quá 48 giờ + 1 ms **U09**.
-  - [`src/App.test.tsx`](src/App.test.tsx) (12 tests): kiểm tra tích hợp hành vi người dùng **U01–U10** (Enter để gửi, đổi quốc gia reset mặc định và xóa kết quả cũ, tách `draft`/`submitted`, chuẩn hóa số nhập, bảo toàn dữ liệu khi lỗi và focus lại ô nhập, hủy kết quả submit cũ khi đổi tuyến lúc đang tải, progressive disclosure `Chi tiết` / `Nguồn dữ liệu`, trường hợp tất cả kênh không đủ phí, bố cục desktop/mobile).
-- **`npm run build`** (`vite build`): đóng gói sạch vào `dist/` (`dist/index.html`, `dist/assets/index-Dkfsrg2F.css`, `dist/assets/index-CgyA-MNH.js`).
+  - [`src/App.test.tsx`](src/App.test.tsx) (13 tests): kiểm tra tích hợp hành vi người dùng **U01–U10**, fallback sang chế độ dự phòng khi `/api/quotes` lỗi, và hiển thị báo giá thực tế từ API.
+  - [`worker/worker.test.ts`](worker/worker.test.ts) (5 tests): kiểm tra endpoint `/api/quotes` cho `JPY` (Wise v4), `KRW` (Vietcombank + MoneyBox + Open ER-API), `TWD` (Bank of Taiwan + Open ER-API) và xử lý lỗi đầu vào/upstream.
+  - [`src/pwa/pwa.test.ts`](src/pwa/pwa.test.ts) (3 tests): kiểm tra cấu hình PWA manifest, Service Worker và đăng ký offline.
+- **`npm run build`** (`vite build`): đóng gói sạch vào `dist/`.
 
 ### 9.2. Đã kiểm thử trực tiếp trên Microsoft Edge cục bộ (`http://localhost:4173/`)
 
@@ -200,14 +210,13 @@ Kiểm thử tự động qua CDP trên **Microsoft Edge** (`Edg/157.0.0.0`) n�
 - **Kiểm tra nhập liệu & lưu đệm khi reload:** Nhập `100.50` báo lỗi `"Nhập số nguyên, ví dụ 100.000."`, giữ nguyên giá trị và focus vào ô nhập; sửa ngân sách sau kết quả ẩn số cũ và hiện `"Bấm So sánh để cập nhật."`; reload trang vẫn đọc `guive_fx_snapshot_v1` từ `localStorage` mà không gọi lại API.
 - **Responsive reflow & giả lập zoom 200%:** Kiểm tra tại `320`, `375`, `768`, `1.024`, `1.440` CSS px và khung nhìn 200% (`320` / `640` CSS px ở `deviceScaleFactor: 2`) — `scrollWidth <= innerWidth` ở mọi mốc, thẻ xếp dọc ở `< 1.024 px`, form `320 px` + bảng ở `>= 1.024 px`, không cắt số tiền VND.
 
-### 9.3. Chưa chạy (cần thiết bị/người thật hoặc hạ tầng deploy)
+### 9.3. Chưa chạy (cần thiết bị/người thật)
 
 - Kiểm tra trên thiết bị di động thật.
 - Kiểm tra thực tế bằng trình đọc màn hình (NVDA / VoiceOver / TalkBack).
 - Thử nghiệm người dùng nhanh (2–3 người thử với 3 tác vụ mục tiêu tại §14.3).
-- Triển khai thực tế lên **Cloudflare Pages** (chưa có URL `*.pages.dev` và commit hash phát hành; cập nhật hai thông tin này sau khi thực hiện bước 6 ở mục 4.2).
 
 ### 9.4. Thông tin phát hành
 
-- **URL production:** `https://gui-ve.buixuanminh1801.workers.dev` (Cloudflare Workers Static Assets, Version ID `1a93686d-c867-4b8d-aebc-f692255a0c26`)
-- **Commit đã kiểm tra trên production:** `a6d0014` (đã kiểm tra trực tiếp trên Microsoft Edge: HTTPS, API `open.er-api.com` HTTP `200`, 3 tuyến `JPY`/`KRW`/`TWD`, `Chi tiết`/`Nguồn dữ liệu`, PWA Service Worker `activated`, tải & so sánh offline, và reflow `320 px`)
+- **URL production:** `https://gui-ve.buixuanminh1801.workers.dev` (Cloudflare Workers + Static Assets, `wrangler.jsonc`)
+- **Commit đã kiểm tra trên production:** `106aac8` (đã kiểm tra trực tiếp trên Microsoft Edge: HTTPS, `/api/quotes` HTTP `200` với nhà cung cấp/tổ chức thực tế cho cả 3 tuyến `JPY` [Instarem, SBI Remit, Wise], `KRW` [Tham chiếu liên ngân hàng, Vietcombank, MoneyBox Seoul] và `TWD` [Tham chiếu liên ngân hàng, Ngân hàng Đài Loan · Đài Bắc], PWA Service Worker `activated`, tải & so sánh offline, không có lỗi console)
